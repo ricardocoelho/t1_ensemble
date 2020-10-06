@@ -8,9 +8,12 @@ def print_tree(node, i, edge):
     if node.is_leaf:
         print("[{}]{}{} {}".format(i, " "*i*4, edge, node.category))
     else:
-        print("[{}]{}{} '{}'(gain: {:.3f} bits)".format(i, " "*i*4, edge, node.attribute, node.gain, ))
+        node_name = node.attribute
+        if node.numeric_condition:
+            node_name += " <= " + "{:.2f}".format(node.numeric_condition)
+        print("[{}]{}{} '{}'(gain: {:.3f} bits)".format(i, " "*i*4, edge, node_name , node.gain, ))
         for key, val in node.child.items():
-            print_tree(val, i+1, key+" ->")
+            print_tree(val, i+1, str(key)+" ->")
 
 
 def create_tree(df, target_attr, selection_algorithm):
@@ -33,17 +36,34 @@ def create_tree(df, target_attr, selection_algorithm):
     node.set_attribute(attr)
     node.set_gain(gain)
 
-    for attr_val, df_splited in df.groupby(attr): #divide as instancias pelos valores do atributo selecionado
-        node.child[attr_val] = create_tree(df_splited.drop(columns=attr), target_attr, selection_algorithm)
+    if df[attr].dtypes == 'object':
+        condition = attr
+    else:
+        mean= df[attr].mean()
+        node.set_numeric_condition(mean)
+        condition = df[attr] <= mean
 
+    for attr_val, df_splited in df.groupby(condition): #divide as instancias pelos valores do atributo selecionado
+        if len(df_splited.index) != 0:
+            node.child[attr_val] = create_tree(df_splited.drop(columns=attr), target_attr, selection_algorithm)
+        
     return node
-
 
 
 def main():
     df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoAD.csv', sep=';')
-
     print(df_train)
+    print(df_train.dtypes)
+    
+# ****necessario somente se os atributos numericos nao forem identificados como 'int64'
+
+#    #adiciona informações para o tipo de cada atributo(categorico/continuo
+#    key_list = ['Hora','Tempo', 'Temperatura', 'Umidade', 'Ventoso', 'Joga']
+#    type_list = ['float64','object','object', 'object', 'object',  'object']
+#    attr_type_dict = dict(zip(key_list, type_list))
+#    df_train = df_train.astype(attr_type_dict)
+#    print(df_train.dtypes)
+
 
     #gera a arvore
     arvore = create_tree(df_train, df_train.columns[-1], ID3)
