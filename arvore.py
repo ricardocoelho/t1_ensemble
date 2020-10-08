@@ -28,10 +28,6 @@ def create_tree(df, target_attr, selection_algorithm):
             node.set_leaf()
             return node
 
-#    if df[target_attr].value_counts().size == 1:  #atributo alvo homogeneo
-#        node.set_leaf()
-#        return node
-
     if df.shape[1] == 1: #nao há novos atributos
         node.set_leaf()
         return node
