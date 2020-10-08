@@ -22,9 +22,15 @@ def create_tree(df, target_attr, selection_algorithm):
 
     node.set_category(most_freq_val)            #guarda valor mais frequente do atributo alvo
     
-    if df[target_attr].value_counts().size == 1:  #atributo alvo homogeneo
-        node.set_leaf()
-        return node
+
+    for value, sub_df in df.groupby(target_attr):
+        if len(sub_df.index) == len(df.index):   #tamanho do df dividido eh o mesmo que do original, homogeneo
+            node.set_leaf()
+            return node
+
+#    if df[target_attr].value_counts().size == 1:  #atributo alvo homogeneo
+#        node.set_leaf()
+#        return node
 
     if df.shape[1] == 1: #nao há novos atributos
         node.set_leaf()
@@ -36,7 +42,7 @@ def create_tree(df, target_attr, selection_algorithm):
     node.set_attribute(attr)
     node.set_gain(gain)
 
-    if df[attr].dtypes == 'object':
+    if df[attr].dtypes == 'object' or str(df[attr].dtypes) == 'category' :
         condition = attr
     else:
         mean= df[attr].mean()
@@ -58,8 +64,8 @@ def main():
 # ****necessario somente se os atributos numericos nao forem identificados como 'int64'
 
 #    #adiciona informações para o tipo de cada atributo(categorico/continuo
-#    key_list = ['Hora','Tempo', 'Temperatura', 'Umidade', 'Ventoso', 'Joga']
-#    type_list = ['float64','object','object', 'object', 'object',  'object']
+#    key_list = ['Tempo', 'Temperatura', 'Umidade', 'Ventoso', 'Joga']
+#    type_list = ['category','category', 'category', 'category',  'category']
 #    attr_type_dict = dict(zip(key_list, type_list))
 #    df_train = df_train.astype(attr_type_dict)
 #    print(df_train.dtypes)

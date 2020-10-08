@@ -24,12 +24,12 @@ def ID3(df, target_attr):
     for col in df.drop(columns=target_attr).columns:   #para todas as colunas exceto o atributo alvo:
         info_attr[col]=0
 
-        if df[col].dtypes == 'object':
+        if df[col].dtypes == 'object' or str(df[col].dtypes) == 'category':
             condition = col
         else:
             condition = df[col] <= df[col].mean()
 
-        for value, df_split in df.groupby(condition):        #divide o df pelos valores do atributo
+        for value, df_split in df.groupby(condition, observed=True):        #divide o df pelos valores do atributo
             val_occurences= len(df_split.index)
             pv = val_occurences/df_len                 #probabilidade do valor do atributo sobre todo o conjunto
 #            print("{}: {}= {}/{}={}.".format(col, value, val_occurences, df_len, pv))
