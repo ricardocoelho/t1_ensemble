@@ -17,7 +17,7 @@ def print_tree(node, i, edge):
 
 
 def create_tree(df, target_attr, selection_algorithm):
-    node= Node();
+    node= Node()
     most_freq_val = df[target_attr].value_counts().idxmax()
 
     node.set_category(most_freq_val)            #guarda valor mais frequente do atributo alvo
@@ -53,7 +53,7 @@ def create_tree(df, target_attr, selection_algorithm):
 
 
 def main():
-    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoAD.csv', sep=';')
+    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
     print(df_train)
     print(df_train.dtypes)
     
@@ -65,7 +65,21 @@ def main():
 #    attr_type_dict = dict(zip(key_list, type_list))
 #    df_train = df_train.astype(attr_type_dict)
 #    print(df_train.dtypes)
+    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
+    #print(df_train_attribute)
+    #print(df_train_attribute.dtypes)
 
+    key_list=[]
+    type_list=[]
+    for i in range(df_train_attribute.shape[0]):
+        #print(df_train_attribute.values[i])
+        key_list.append(df_train_attribute.values[i][0])
+        type_list.append(df_train_attribute.values[i][1])
+
+    print("Os atributos são ",key_list," com tipos ",type_list)
+    attr_type_dict = dict(zip(key_list, type_list))
+    df_train = df_train.astype(attr_type_dict)
+    print(df_train.dtypes)
 
     #gera a arvore
     arvore = create_tree(df_train, df_train.columns[-1], ID3)
