@@ -2,7 +2,7 @@ import math
 import pandas as pd
 from node import Node
 from ID3 import ID3
-
+import random
 
 def print_tree(node, i, edge):
     if node.is_leaf:
@@ -51,6 +51,40 @@ def create_tree(df, target_attr, selection_algorithm):
         
     return node
 
+def bootstrap_table(df_train, key_list, attr_type_dict):
+    #print(df_train.values[4])
+    #seleciona conjunto de treino
+    bs_list=[]
+    n_dados_teste=df_train.shape[0]
+    escolhidos=random.choices(range(0, n_dados_teste), k=n_dados_teste)
+    for i in range(n_dados_teste):
+        bs_list.append(df_train.values[escolhidos[i]])
+
+    bs_table=pd.DataFrame.from_records(bs_list, columns=key_list)
+    bs_table = bs_table.astype(attr_type_dict)
+    #print("\nBOOTSTRAP\n",bs_table)   
+
+    #para conferir que é amostragem com reposição
+    #bs_table_unica=pd.DataFrame.drop_duplicates(bs_table)
+    #print("\ntabela valores unicos\n",bs_table_unica)
+    return bs_table, escolhidos
+
+def out_of_bag_table(df_train, escolhidos, key_list, attr_type_dict):
+    #seleciona conjunto de teste
+    n_escolhidos=[]
+    for i in range(df_train.shape[0]):
+        if i not in escolhidos:
+            n_escolhidos.append(i)
+
+    out_list=[]
+    for i in range(len(n_escolhidos)):
+        out_list.append(df_train.values[n_escolhidos[i]])
+
+    out_table=pd.DataFrame.from_records(out_list, columns=key_list)
+    out_table = out_table.astype(attr_type_dict)
+    #print("NAO ESCOLHIDOS\n",out_of_bag_table)
+
+    return out_table, n_escolhidos
 
 def main():
     df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
@@ -81,15 +115,22 @@ def main():
     df_train = df_train.astype(attr_type_dict)
     print(df_train.dtypes)
 
+    bootstrap, escolhidos = bootstrap_table(df_train, key_list, attr_type_dict)
+    out_of_bag, n_escolhidos = out_of_bag_table(df_train, escolhidos, key_list, attr_type_dict)
+
     #gera a arvore
-    arvore = create_tree(df_train, df_train.columns[-1], ID3)
+    arvore = create_tree(bootstrap, bootstrap.columns[-1], ID3)
 
     print_tree(arvore,0, "")
 
     #testa instancia
-    uma_instancia= df_train[-1:]
-    value = arvore.predict(uma_instancia)
-    print("predicao teste:", value);
+    
+    #uma_instancia= df_train[-1:]
+    for i in range(out_of_bag.shape[0]):
+        uma_instancia=out_of_bag[i:i+1]
+        print(uma_instancia)
+        value = arvore.predict(uma_instancia)
+        print("predicao teste:", value);
 
 
 if __name__ == "__main__" :
