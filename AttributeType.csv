@@ -1,0 +1,6 @@
+Attribute;Type
+Tempo;category
+Temperatura;float64
+Umidade;float64
+Ventoso;category
+Joga;category
