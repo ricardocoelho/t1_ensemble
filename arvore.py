@@ -3,6 +3,7 @@ import pandas as pd
 from node import Node
 from ID3 import ID3
 import random
+import numpy as np
 
 def print_tree(node, i, edge):
     if node.is_leaf:
@@ -16,14 +17,19 @@ def print_tree(node, i, edge):
             print_tree(val, i+1, str(key)+" ->")
 
 
-def create_tree(df, target_attr, selection_algorithm):
+def create_tree(df, target_attr, selection_algorithm, m=None):
+    if not m:
+        m = len(df.columns) - 1
+
     node= Node()
     most_freq_val = df[target_attr].value_counts().idxmax()
 
     node.set_category(most_freq_val)            #guarda valor mais frequente do atributo alvo
-    
+
+#    print("NEW_NODE:")
 
     for value, sub_df in df.groupby(target_attr):
+#        print("{}: {} items".format(value, len(sub_df.index)))
         if len(sub_df.index) == len(df.index):   #tamanho do df dividido eh o mesmo que do original, homogeneo
             node.set_leaf()
             return node
@@ -32,8 +38,14 @@ def create_tree(df, target_attr, selection_algorithm):
         node.set_leaf()
         return node
 
-    attr, gain = selection_algorithm(df, target_attr)
-#    print('choosen attribute: {}'.format(attr))
+    attr_list = list(df.columns).copy()
+    attr_list.remove(target_attr)
+
+    sampled_attr_list = amostragem_atributos(attr_list)
+
+
+    attr, gain = selection_algorithm(df[sampled_attr_list+[target_attr]].copy(), target_attr)
+#    print('choosen attribute: {} gain: {}'.format(attr, gain))
 
     node.set_attribute(attr)
     node.set_gain(gain)
@@ -47,7 +59,7 @@ def create_tree(df, target_attr, selection_algorithm):
 
     for attr_val, df_splited in df.groupby(condition): #divide as instancias pelos valores do atributo selecionado
         if len(df_splited.index) != 0:
-            node.child[attr_val] = create_tree(df_splited.drop(columns=attr), target_attr, selection_algorithm)
+            node.child[attr_val] = create_tree(df_splited.drop(columns=attr), target_attr, selection_algorithm, m)
         
     return node
 
@@ -94,37 +106,32 @@ def out_of_bag_table(df_train, escolhidos):
 
 def amostragem_atributos(key_list):
     n_atri=len(key_list)
+    num_samples = int(n_atri ** (1/2))
+    if num_samples == 0:
+        num_samples = 1
 
     new_key_list=[]
     #print("São ",n_atri," atributos")
-    escolhidos=random.sample(range(0, n_atri-1), k=int(n_atri ** (1/2)))#amostragem sem reposição
-    for i in range(int(n_atri ** (1/2))):
+    escolhidos = random.sample(range(0, n_atri), k=num_samples)#amostragem sem reposição
+    for i in range(len(escolhidos)):
         #print(i," escolhido ",escolhidos[i],"esse",key_list[escolhidos[i]],"e esse",type_list[escolhidos[i]])
         new_key_list.append(key_list[escolhidos[i]])
-    new_key_list.append(key_list[-1])
 
-
-    print("atributos sorteados", new_key_list)
+#    print("atributos sorteados", new_key_list)
     return new_key_list
 
 
 def main():
-    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
-    print(df_train)
-    print(df_train.dtypes)
+    random.seed(10)
+    np.random.seed(10)
+
+#    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
+    df_train = pd.read_csv('house-votes-84.tsv', sep='\t')
+    print(df_train.head(5))
     
-# ****necessario somente se os atributos numericos nao forem identificados como 'int64'
-
 #    #adiciona informações para o tipo de cada atributo(categorico/continuo
-#    key_list = ['Tempo', 'Temperatura', 'Umidade', 'Ventoso', 'Joga']
-#    type_list = ['category','category', 'category', 'category',  'category']
-#    attr_type_dict = dict(zip(key_list, type_list))
-#    df_train = df_train.astype(attr_type_dict)
-#    print(df_train.dtypes)
-    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
-
-    print(df_train_attribute)
-    #print(df_train_attribute.dtypes)
+#    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
+    df_train_attribute = pd.read_csv('house-votes-84_types.csv', sep=';')
 
     key_list=[]
     type_list=[]
@@ -133,25 +140,19 @@ def main():
         key_list.append(df_train_attribute.values[i][0])
         type_list.append(df_train_attribute.values[i][1])
 
-    print("Os atributos são ",key_list," com tipos ",type_list)
     attr_type_dict = dict(zip(key_list, type_list))
     df_train = df_train.astype(attr_type_dict)
     print(df_train.dtypes)
+
 #################################começa a geração das árvores
 
-    new_key_list = amostragem_atributos(key_list)
-    #abre o arquivo somente com as colunas selecionadas
-
-    new_dt_train = df_train[new_key_list]
-    print(new_dt_train)
-
     #seleciona conjuntos de treinamento e teste
-    bootstrap = bootstrap_table(new_dt_train)
-    print("bootstap")
+    bootstrap = bootstrap_table(df_train.copy())
+    print("BOOTSTRAP:")
     print(bootstrap)
 
-    out_of_bag = out_of_bag_table(new_dt_train, bootstrap)
-    print("out of bag")
+    out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
+    print("OUT OF BAG:")
     print(out_of_bag)
 
     #gera a arvore
@@ -163,12 +164,12 @@ def main():
     #testa instancia
     
     #uma_instancia= df_train[-1:]
-    print("TESTES:")
+    print("\n\nTESTES:")
     for i in range(out_of_bag.shape[0]):
         uma_instancia=out_of_bag[i:i+1]
-        print(uma_instancia)
-        value = arvore.predict(uma_instancia)
-        print("predicao teste:", value);
+        real_value = uma_instancia.iloc[0][uma_instancia.columns[-1]]
+        predicted_value = arvore.predict(uma_instancia)
+        print("real, predito: ({}, {})".format(real_value , predicted_value));
 
     return
 
