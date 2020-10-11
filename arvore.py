@@ -126,12 +126,14 @@ def main():
     np.random.seed(10)
 
 #    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
-    df_train = pd.read_csv('house-votes-84.tsv', sep='\t')
+#    df_train = pd.read_csv('house-votes-84.tsv', sep='\t')
+    df_train = pd.read_csv('wine-recognition.tsv', sep='\t')
     print(df_train.head(5))
+    target_coluna=0#<<<<<<<<<<<-----------------coluna onde está o target
     
 #    #adiciona informações para o tipo de cada atributo(categorico/continuo
 #    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
-    df_train_attribute = pd.read_csv('house-votes-84_types.csv', sep=';')
+    df_train_attribute = pd.read_csv('wine-recognition_types.csv', sep=';')
 
     key_list=[]
     type_list=[]
@@ -140,13 +142,18 @@ def main():
         key_list.append(df_train_attribute.values[i][0])
         type_list.append(df_train_attribute.values[i][1])
 
+    print(key_list)
     attr_type_dict = dict(zip(key_list, type_list))
     df_train = df_train.astype(attr_type_dict)
     print(df_train.dtypes)
 
+    alvo=df_train[key_list[target_coluna]].unique()
+    print("ALVO: ",alvo)
+    
+
 #################################começa a geração das árvores
     floresta=[]
-    n_arvores=3
+    n_arvores=11
     for i in range(n_arvores):
         #seleciona conjuntos de treinamento e teste
         bootstrap = bootstrap_table(df_train.copy())
@@ -158,7 +165,7 @@ def main():
         print(out_of_bag)
 
         #gera a arvore
-        arvore = create_tree(bootstrap, bootstrap.columns[-1], ID3)
+        arvore = create_tree(bootstrap, bootstrap.columns[target_coluna], ID3)
         floresta.append(arvore)
         print_tree(arvore,0, "")
 
@@ -169,16 +176,18 @@ def main():
     print("\n\nTESTES:")
     for i in range(out_of_bag.shape[0]):
         uma_instancia=out_of_bag[i:i+1]
-        real_value = uma_instancia.iloc[0][uma_instancia.columns[-1]]
-        votacao=0
+        real_value = uma_instancia.iloc[0][uma_instancia.columns[target_coluna]]
+        votacao=[]
         for arvore in floresta:
             predicted_value = arvore.predict(uma_instancia)
-            votacao=votacao+predicted_value
-        print(votacao,"votos")#, divide em ",int(n_arvores/2))
-        if votacao <= int(n_arvores/2):
-            predicted_value=0
-        else:
-            predicted_value=1
+            votacao.append(predicted_value)
+        print(votacao,"votos")#, divide em ",int(n_arvores/len(alvo)))
+
+        for categoria_alvo in alvo:
+            if (votacao.count(categoria_alvo) > int(n_arvores/len(alvo))):
+                predicted_value=categoria_alvo
+                break
+
         print("real, predito: ({}, {})".format(real_value , predicted_value));
 
     return
