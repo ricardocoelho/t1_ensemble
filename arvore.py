@@ -145,30 +145,40 @@ def main():
     print(df_train.dtypes)
 
 #################################começa a geração das árvores
+    floresta=[]
+    n_arvores=3
+    for i in range(n_arvores):
+        #seleciona conjuntos de treinamento e teste
+        bootstrap = bootstrap_table(df_train.copy())
+        print("BOOTSTRAP:")
+        print(bootstrap)
 
-    #seleciona conjuntos de treinamento e teste
-    bootstrap = bootstrap_table(df_train.copy())
-    print("BOOTSTRAP:")
-    print(bootstrap)
+        out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
+        print("OUT OF BAG:")
+        print(out_of_bag)
 
-    out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
-    print("OUT OF BAG:")
-    print(out_of_bag)
-
-    #gera a arvore
-    arvore = create_tree(bootstrap, bootstrap.columns[-1], ID3)
-
-    print_tree(arvore,0, "")
+        #gera a arvore
+        arvore = create_tree(bootstrap, bootstrap.columns[-1], ID3)
+        floresta.append(arvore)
+        print_tree(arvore,0, "")
 
 #################################teste
     #testa instancia
-    
+    #por enquanto, vai pegar o out of bag do ultimo
     #uma_instancia= df_train[-1:]
     print("\n\nTESTES:")
     for i in range(out_of_bag.shape[0]):
         uma_instancia=out_of_bag[i:i+1]
         real_value = uma_instancia.iloc[0][uma_instancia.columns[-1]]
-        predicted_value = arvore.predict(uma_instancia)
+        votacao=0
+        for arvore in floresta:
+            predicted_value = arvore.predict(uma_instancia)
+            votacao=votacao+predicted_value
+        print(votacao,"votos")#, divide em ",int(n_arvores/2))
+        if votacao <= int(n_arvores/2):
+            predicted_value=0
+        else:
+            predicted_value=1
         print("real, predito: ({}, {})".format(real_value , predicted_value));
 
     return
