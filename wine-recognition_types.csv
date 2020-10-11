@@ -4,7 +4,7 @@ target;category
 2;float64
 3;float64
 4;float64
-5;float64
+5;int64
 6;float64
 7;float64
 8;float64
@@ -12,4 +12,4 @@ target;category
 10;float64
 11;float64
 12;float64
-13;float64
+13;int64
