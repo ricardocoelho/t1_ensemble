@@ -4,6 +4,74 @@ import random
 import numpy as np
 from arvore import Arvore, FlorestaAleatoria
 
+def cross_validation(df, target, K):
+    target_classes = df[target].value_counts()
+
+    #dividir o dataset nas classes do atributo alvo
+    df_list= []
+
+    for name, df in df.groupby(target):
+        df_list.append(df)
+
+    print([len(x) for x in df_list])
+    #tamanho de cada fold para negativos e positivos
+    fold_size_per_target = list(map(lambda x: round(len(x.index)/K), df_list))
+
+    print(fold_size_per_target)
+
+    #divide em K folds
+    fold_list_per_target=[]
+
+    for df, fold_size in zip(df_list, fold_size_per_target):
+        print("ashdasu")
+        fold_class_list =[]
+        for i in range(0,K):
+            if(i==K-1):
+                fold_class_list.append(df[fold_size*i :])
+            else:
+                fold_class_list.append(df[fold_size*i : fold_size*(i+1)])
+
+        fold_list_per_target.append(fold_class_list)
+
+
+    #junta os K folds em uma lista unica, contendo folds estratificados
+    fold_list= []
+    for fold in zip(*fold_list_per_target):
+        fold_list.append(pd.concat(list(fold), axis=0))
+
+    print(fold_list)
+
+    table_of_confusion_list= [None for _ in range(K)]
+
+    target_coluna = list(df.columns).index(target)
+
+    for i in range(0,K):
+        train = pd.concat(fold_list[:i] + fold_list[i+1:], axis=0)
+        test = fold_list[i]
+
+        modelo = FlorestaAleatoria(train.copy(), target_coluna, 3); #parametro n_arvores
+
+
+        #inicializa a matriz de confusao
+        table_of_confusion_list[i]= {'CERTO':0,'ERRADO':0}
+
+        print("TESTE")
+        #roda o KNN para cada instancia do fold de teste atual
+        for j, test_row in test.iterrows():
+            resp= modelo.predict(test_row)
+            print("[{}/{}]{:02.2f}% to complete...".format(i+1, K,100*j/len(test.index) ), end='\r')
+
+            #atualiza a matriz de confusao
+            if resp == test_row[target]:
+                table_of_confusion_list[i]['CERTO'] += 1
+            else:
+                table_of_confusion_list[i]['ERRADO'] += 1
+
+    print()
+    print(table_of_confusion_list)
+
+
+
 def main():
     random.seed(10)
     np.random.seed(10)
@@ -32,6 +100,7 @@ def main():
     df_train = df_train.astype(attr_type_dict)
     print(df_train.dtypes)
 
+    #cross_validation(df_train, 'target', 10)
 
     modelo = FlorestaAleatoria(df_train.copy(), target_coluna, 11); #parametro n_arvores
 
