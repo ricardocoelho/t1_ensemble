@@ -16,6 +16,17 @@ def print_tree(node, i, edge):
         for key, val in node.child.items():
             print_tree(val, i+1, str(key)+" ->")
 
+class Arvore:
+    def __init__(self, train, target_attr, selection_algorithm):
+        self.root_node = create_tree(train, target_attr, selection_algorithm)
+
+    def print(self):
+        print_tree(self.root_node,0, "")
+
+    def predict(self, instancia):
+        return self.root_node.predict(instancia)
+
+
 
 def create_tree(df, target_attr, selection_algorithm, m=None):
     if not m:
@@ -64,44 +75,11 @@ def create_tree(df, target_attr, selection_algorithm, m=None):
     return node
 
 def bootstrap_table(treino):
-    #print(treino.values[4])
-    #seleciona conjunto de treino
-#    bs_list=[]
-
     n_dados_teste = treino.shape[0]
-#
-#    escolhidos = random.choices(range(0, n_dados_teste), k=n_dados_teste)
-#    for i in range(n_dados_teste):
-#        bs_list.append(treino.values[escolhidos[i]])
-#
-#    bs_table=pd.DataFrame.from_records(bs_list, columns=chaves_list)
-#    bs_table = bs_table.astype(atri_dict)
-
-
     return treino.sample(n=n_dados_teste, replace = True)
-
-    #print("\nBOOTSTRAP\n",bs_table)   
-
-    #para conferir que é amostragem com reposição
-    #bs_table_unica=pd.DataFrame.drop_duplicates(bs_table)
-    #print("\ntabela valores unicos\n",bs_table_unica)
-    return bs_table
 
 def out_of_bag_table(df_train, escolhidos):
     #seleciona conjunto de teste
-#    n_escolhidos=[]
-#    for i in range(df_train.shape[0]):
-#        if i not in escolhidos:
-#            n_escolhidos.append(i)
-#
-#    out_list=[]
-#    for i in range(len(n_escolhidos)):
-#        out_list.append(df_train.values[n_escolhidos[i]])
-#
-#    out_table=pd.DataFrame.from_records(out_list, columns=df.train.columns)
-#    out_table = out_table.astype(attr_type_dict)
-#    #print("NAO ESCOLHIDOS\n",out_of_bag_table)
-
     return df_train[~df_train.index.isin(escolhidos.index)]
 
 def amostragem_atributos(key_list):
@@ -120,77 +98,41 @@ def amostragem_atributos(key_list):
 #    print("atributos sorteados", new_key_list)
     return new_key_list
 
+class FlorestaAleatoria:
+    def __init__(self, df_train, target_coluna, n_arvores):
+        self.floresta=[]
 
-def main():
-    random.seed(10)
-    np.random.seed(10)
+        key_list = list(df_train.columns)
+        self.alvo = df_train[key_list[target_coluna]].unique()
+        print("ALVO: ",self.alvo)
 
-#    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
-#    df_train = pd.read_csv('house-votes-84.tsv', sep='\t')
-    df_train = pd.read_csv('wine-recognition.tsv', sep='\t')
-    print(df_train.head(5))
-    target_coluna=0#<<<<<<<<<<<-----------------coluna onde está o target
-    
-#    #adiciona informações para o tipo de cada atributo(categorico/continuo
-#    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
-    df_train_attribute = pd.read_csv('wine-recognition_types.csv', sep=';')
 
-    key_list=[]
-    type_list=[]
-    for i in range(df_train_attribute.shape[0]):
-        #print(df_train_attribute.values[i])
-        key_list.append(df_train_attribute.values[i][0])
-        type_list.append(df_train_attribute.values[i][1])
+        for i in range(n_arvores):
+            #seleciona conjuntos de treinamento e teste
+            bootstrap = bootstrap_table(df_train.copy())
+            print("BOOTSTRAP:")
+            print(bootstrap)
+#            out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
+#            print("OUT OF BAG:")
+#            print(out_of_bag)
+            #gera a arvore
+            arvore = Arvore(bootstrap, bootstrap.columns[target_coluna], ID3)
+            arvore.print()
+            self.floresta.append(arvore)
 
-    print(key_list)
-    attr_type_dict = dict(zip(key_list, type_list))
-    df_train = df_train.astype(attr_type_dict)
-    print(df_train.dtypes)
-
-    alvo=df_train[key_list[target_coluna]].unique()
-    print("ALVO: ",alvo)
-    
-
-#################################começa a geração das árvores
-    floresta=[]
-    n_arvores=11
-    for i in range(n_arvores):
-        #seleciona conjuntos de treinamento e teste
-        bootstrap = bootstrap_table(df_train.copy())
-        print("BOOTSTRAP:")
-        print(bootstrap)
-
-        out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
-        print("OUT OF BAG:")
-        print(out_of_bag)
-
-        #gera a arvore
-        arvore = create_tree(bootstrap, bootstrap.columns[target_coluna], ID3)
-        floresta.append(arvore)
-        print_tree(arvore,0, "")
-
-#################################teste
-    #testa instancia
-    #por enquanto, vai pegar o out of bag do ultimo
-    #uma_instancia= df_train[-1:]
-    print("\n\nTESTES:")
-    for i in range(out_of_bag.shape[0]):
-        uma_instancia=out_of_bag[i:i+1]
-        real_value = uma_instancia.iloc[0][uma_instancia.columns[target_coluna]]
+    def predict(self, instancia):
         votacao=[]
-        for arvore in floresta:
-            predicted_value = arvore.predict(uma_instancia)
+        for arvore in self.floresta:
+            predicted_value = arvore.predict(instancia)
             votacao.append(predicted_value)
-        print(votacao,"votos")#, divide em ",int(n_arvores/len(alvo)))
+            #print(votacao,"votos")#, divide em ",int(n_arvores/len(alvo)))
 
-        for categoria_alvo in alvo:
-            if (votacao.count(categoria_alvo) > int(n_arvores/len(alvo))):
+        for categoria_alvo in self.alvo:
+            if (votacao.count(categoria_alvo) > int(len(self.floresta)/len(self.alvo))):
                 predicted_value=categoria_alvo
                 break
 
-        print("real, predito: ({}, {})".format(real_value , predicted_value));
-
-    return
+        return predicted_value
 
 
 if __name__ == "__main__" :
