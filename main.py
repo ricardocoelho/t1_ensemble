@@ -1,12 +1,25 @@
+import sys
 import math
 import pandas as pd
 import random
 import numpy as np
 from arvore import Arvore, FlorestaAleatoria
+# ---------------------------------------------------------------------
+dataset = {}
+dataset["votos"] = {\
+    "data": ('house-votes-84.tsv', '\t'), \
+    "types": ('house-votes-84_types.csv', ';')}
+dataset["jogo"] =  { \
+    "data": ('dadosBenchmark_validacaoAlgoritmoADv2.csv', ';'), \
+    "types": ('AttributeType.csv', ';')}
+dataset["vinho"] = {\
+    "data":  ('wine-recognition.tsv','\t'), \
+    "types": ('wine-recognition_types.csv', ';')}
+
+# ---------------------------------------------------------------------
 
 def cross_validation(df, target, K):
-    target_classes = df[target].value_counts()
-
+    target_classes = df[target].value_counts() # TODO: unused var
     #dividir o dataset nas classes do atributo alvo
     df_list= []
 
@@ -57,10 +70,16 @@ def cross_validation(df, target, K):
 
         print("TESTE")
         #roda o KNN para cada instancia do fold de teste atual
+        #test.reset_index(drop=True)
+        ### (the following two lines work to reset j but i disapprove)
+        ### test = test.copy() 
+        ### test.index = range(len(test.index))
+        nrow = 0
         for j, test_row in test.iterrows():
+            
             resp= modelo.predict(test_row)
-            print("[{}/{}]{:02.2f}% to complete...".format(i+1, K,100*j/len(test.index) ), end='\r')
-
+            print("[{}/{}]{:0.2f}% complete...".format(i+1, K,100*(nrow+1)/len(test.index) ), end='\r')
+            nrow += 1
             #atualiza a matriz de confusao
             if resp == test_row[target]:
                 table_of_confusion_list[i]['CERTO'] += 1
@@ -70,22 +89,22 @@ def cross_validation(df, target, K):
     print()
     print(table_of_confusion_list)
 
-
-
+# ---------------------------------------------------------------------
 def main():
     random.seed(10)
     np.random.seed(10)
 
-#    df_train = pd.read_csv('dadosBenchmark_validacaoAlgoritmoADv2.csv', sep=';')
-#    df_train = pd.read_csv('house-votes-84.tsv', sep='\t')
-    df_train = pd.read_csv('wine-recognition.tsv', sep='\t')
-    print(df_train.head(5))
-    target_coluna=0#<<<<<<<<<<<-----------------coluna onde está o target
-    
-#    #adiciona informações para o tipo de cada atributo(categorico/continuo
-#    df_train_attribute = pd.read_csv('AttributeType.csv', sep=';')
-    df_train_attribute = pd.read_csv('wine-recognition_types.csv', sep=';')
+    if len(sys.argv) > 1 and sys.argv[1] in dataset.keys():
+        ds = dataset[sys.argv[1]]
+    else: 
+        ds = dataset["votos"] # default dataset 
 
+    df_train = pd.read_csv(ds["data"][0], sep=ds["data"][1])
+    df_train_attribute = pd.read_csv(ds["types"][0], sep=ds["types"][1])
+
+    print(df_train.head(5))
+    target_coluna=0     #<<<<<<<<<<<-----------------coluna onde está o target
+    
     key_list=[]
     type_list=[]
     for i in range(df_train_attribute.shape[0]):
@@ -95,30 +114,34 @@ def main():
 
     print(key_list)
     
+    target_attribute = key_list[-1]
+
+    print(target_attribute)
 
     attr_type_dict = dict(zip(key_list, type_list))
     df_train = df_train.astype(attr_type_dict)
     print(df_train.dtypes)
 
-    #cross_validation(df_train, 'target', 10)
+    cross_validation(df_train, target_attribute, 10)
 
-    modelo = FlorestaAleatoria(df_train.copy(), target_coluna, 11); #parametro n_arvores
+    return
+# ---------------------------------------------------------------------
 
-
-#################################teste
-    #testa instancia
-    #por enquanto, vai pegar as 10 primeiras linhas do conjunto de treino
-    #uma_instancia= df_train[-1:]
-    print("\n\nTESTES:")
-
-    for i in range(0,10):
-        uma_instancia=df_train[i:i+1]
-        real_value = uma_instancia.iloc[0][uma_instancia.columns[target_coluna]]
-
-        predicted_value = modelo.predict(uma_instancia)
-        print("real, predito: ({}, {})".format(real_value , predicted_value));
+    # modelo = FlorestaAleatoria(df_train.copy(), target_coluna, 11); #parametro n_arvores
 
 
+# #################################teste
+#     #testa instancia
+#     #por enquanto, vai pegar as 10 primeiras linhas do conjunto de treino
+#     #uma_instancia= df_train[-1:]
+#     print("\n\nTESTES:")
+
+#     for i in range(0,10):
+#         uma_instancia=df_train[i:i+1]
+#         real_value = uma_instancia.iloc[0][uma_instancia.columns[target_coluna]]
+
+#         predicted_value = modelo.predict(uma_instancia)
+#         print("real, predito: ({}, {})".format(real_value , predicted_value));
 
 
 if __name__ == "__main__" :

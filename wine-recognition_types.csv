@@ -1,5 +1,4 @@
 Attribute;Type
-target;category
 1;float64
 2;float64
 3;float64
@@ -13,3 +12,4 @@ target;category
 11;float64
 12;float64
 13;int64
+target;category

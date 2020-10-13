@@ -27,9 +27,14 @@ class Node:
         if self.is_leaf:
             return self.category
 
-        key = inst[self.attribute].item()
+        # print("***atributo: ", self.attribute)
+        # print("***instancia: ***\n", inst)
+        # print("***inst[attrib] = ", inst[self.attribute])
+
         if self.numeric_condition:
-            key = inst[self.attribute].item() <= self.numeric_condition
+            key = inst[self.attribute] <= self.numeric_condition
+        else:
+            key = inst[self.attribute]
 
         if key in self.child:
             return self.child[key].predict(inst)
