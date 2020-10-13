@@ -36,7 +36,7 @@ def cross_validation(df, target, K):
     fold_list_per_target=[]
 
     for df, fold_size in zip(df_list, fold_size_per_target):
-        print("ashdasu")
+        #print("ashdasu")
         fold_class_list =[]
         for i in range(0,K):
             if(i==K-1):
@@ -61,8 +61,8 @@ def cross_validation(df, target, K):
     for i in range(0,K):
         train = pd.concat(fold_list[:i] + fold_list[i+1:], axis=0)
         test = fold_list[i]
-
-        modelo = FlorestaAleatoria(train.copy(), target_coluna, 3); #parametro n_arvores
+        n_arvores=3
+        modelo = FlorestaAleatoria(train.copy(), target_coluna, n_arvores); #parametro n_arvores
 
 
         #inicializa a matriz de confusao
@@ -89,6 +89,14 @@ def cross_validation(df, target, K):
     print()
     print(table_of_confusion_list)
 
+    acuracia_total=0
+    total_testes=0
+    for item in table_of_confusion_list:
+        acuracia_total=acuracia_total+item['CERTO']
+        total_testes=total_testes+item['CERTO']+item['ERRADO']
+    acuracia_total=acuracia_total/total_testes
+    print("n: ",n_arvores," Acuracia: ",acuracia_total)
+
 # ---------------------------------------------------------------------
 def main():
     random.seed(10)
@@ -103,7 +111,7 @@ def main():
     df_train_attribute = pd.read_csv(ds["types"][0], sep=ds["types"][1])
 
     print(df_train.head(5))
-    target_coluna=0     #<<<<<<<<<<<-----------------coluna onde está o target
+    #target_coluna=0     #<<<<<<<<<<<-----------------coluna onde está o target
     
     key_list=[]
     type_list=[]

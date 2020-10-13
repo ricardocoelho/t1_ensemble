@@ -127,11 +127,18 @@ class FlorestaAleatoria:
             votacao.append(predicted_value)
             #print(votacao,"votos")#, divide em ",int(n_arvores/len(alvo)))
 
-        for categoria_alvo in self.alvo:
-            if (votacao.count(categoria_alvo) > int(len(self.floresta)/len(self.alvo))):
-                predicted_value=categoria_alvo
-                break
-
+        if (len(self.alvo)==2):
+            for categoria_alvo in self.alvo:
+                if (votacao.count(categoria_alvo) > int(len(self.floresta)/len(self.alvo))):
+                    predicted_value=categoria_alvo
+                    break
+        else:
+            mais_votado=self.alvo[-1]
+            for categoria_alvo in self.alvo:
+                if (votacao.count(categoria_alvo) > votacao.count(mais_votado)):
+                    mais_votado=categoria_alvo            
+            predicted_value=mais_votado
+            
         return predicted_value
 
 
