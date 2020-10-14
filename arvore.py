@@ -104,20 +104,20 @@ class FlorestaAleatoria:
 
         key_list = list(df_train.columns)
         self.alvo = df_train[key_list[target_coluna]].unique()
-        print("ALVO: ",self.alvo)
+#        print("ALVO: ",self.alvo)
 
 
         for i in range(n_arvores):
             #seleciona conjuntos de treinamento e teste
             bootstrap = bootstrap_table(df_train.copy())
-            print("BOOTSTRAP:")
-            print(bootstrap)
+#            print("BOOTSTRAP:")
+#            print(bootstrap)
 #            out_of_bag = out_of_bag_table(df_train.copy(), bootstrap)
 #            print("OUT OF BAG:")
 #            print(out_of_bag)
             #gera a arvore
             arvore = Arvore(bootstrap, bootstrap.columns[target_coluna], ID3)
-            arvore.print()
+#            arvore.print()
             self.floresta.append(arvore)
 
     def predict(self, instancia):
