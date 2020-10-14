@@ -94,7 +94,7 @@ def cross_validation(df, target, K):
         test[i] = fold_list[i].copy()
 
     #roda os treinos em paralelo
-    with Pool(processes=4) as pool:
+    with Pool(processes=5) as pool:
         #encapsula os argumentos
         arg_list = (zip(train, test, [target_coluna]*K, [n_arvores]*K))
         result_list = pool.map(treina_e_testa, arg_list)
@@ -147,7 +147,7 @@ def main():
 
     global n_arvores
 
-    valores_de_teste = [1,5,11,25]  #valores para n_arvores
+    valores_de_teste = [1,5,11,23]  #valores para n_arvores
     
     print("n; Acuracia; desvio_padrao")
 

@@ -1,3 +1,4 @@
+import sys
 import math
 import pandas as pd
 from node import Node
@@ -7,7 +8,7 @@ import numpy as np
 
 def print_tree(node, i, edge):
     if node.is_leaf:
-        print("[{}]{}{} {}".format(i, " "*i*4, edge, node.category))
+        print("[{}]{}{} {}".format(i, " "*i*4, edge, node.target_value))
     else:
         node_name = node.attribute
         if node.numeric_condition:
@@ -17,8 +18,8 @@ def print_tree(node, i, edge):
             print_tree(val, i+1, str(key)+" ->")
 
 class Arvore:
-    def __init__(self, train, target_attr, selection_algorithm):
-        self.root_node = create_tree(train, target_attr, selection_algorithm)
+    def __init__(self, train, target_attr, selection_algorithm, m=None):
+        self.root_node = create_tree(train, target_attr, selection_algorithm, m)
 
     def print(self):
         print_tree(self.root_node,0, "")
@@ -30,12 +31,12 @@ class Arvore:
 
 def create_tree(df, target_attr, selection_algorithm, m=None):
     if not m:
-        m = len(df.columns) - 1
+        m = (len(df.columns)-1)**(1/2)
 
     node= Node()
     most_freq_val = df[target_attr].value_counts().idxmax()
 
-    node.set_category(most_freq_val)            #guarda valor mais frequente do atributo alvo
+    node.set_target_value(most_freq_val)            #guarda valor mais frequente do atributo alvo
 
 #    print("NEW_NODE:")
 
@@ -52,7 +53,7 @@ def create_tree(df, target_attr, selection_algorithm, m=None):
     attr_list = list(df.columns).copy()
     attr_list.remove(target_attr)
 
-    sampled_attr_list = amostragem_atributos(attr_list)
+    sampled_attr_list = amostragem_atributos(attr_list, m)
 
 
     attr, gain = selection_algorithm(df[sampled_attr_list+[target_attr]].copy(), target_attr)
@@ -82,9 +83,9 @@ def out_of_bag_table(df_train, escolhidos):
     #seleciona conjunto de teste
     return df_train[~df_train.index.isin(escolhidos.index)]
 
-def amostragem_atributos(key_list):
-    n_atri=len(key_list)
-    num_samples = int(n_atri ** (1/2))
+def amostragem_atributos(key_list, m):
+    n_atri = len(key_list)
+    num_samples = int(min(n_atri, m))
     if num_samples == 0:
         num_samples = 1
 
@@ -141,6 +142,57 @@ class FlorestaAleatoria:
             
         return predicted_value
 
+
+# ---------------------------------------------------------------------
+dataset = {}
+dataset["votos"] = {\
+    "data": ('house-votes-84.tsv', '\t'), \
+    "types": ('house-votes-84_types.csv', ';')}
+dataset["jogo"] =  { \
+    "data": ('dadosBenchmark_validacaoAlgoritmoADv2.csv', ';'), \
+    "types": ('AttributeType.csv', ';')}
+dataset["jogo_original"] =  { \
+    "data": ('dadosBenchmark_validacaoAlgoritmoAD.csv', ';'), \
+    "types": ('AttributeType_original.csv', ';')}
+dataset["vinho"] = {\
+    "data":  ('wine-recognition.tsv','\t'), \
+    "types": ('wine-recognition_types.csv', ';')}
+
+# ---------------------------------------------------------------------
+
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1] in dataset.keys():
+        ds = dataset[sys.argv[1]]
+    else: 
+        ds = dataset["votos"] # default dataset 
+
+    df_train = pd.read_csv(ds["data"][0], sep=ds["data"][1])
+    df_train_attribute = pd.read_csv(ds["types"][0], sep=ds["types"][1])
+
+
+    key_list=[]
+    type_list=[]
+    for i in range(df_train_attribute.shape[0]):
+        #print(df_train_attribute.values[i])
+        key_list.append(df_train_attribute.values[i][0])
+        type_list.append(df_train_attribute.values[i][1])
+
+#    print(key_list)
+    
+    target_attribute = key_list[-1]
+
+#    print(target_attribute)
+
+    attr_type_dict = dict(zip(key_list, type_list))
+    df_train = df_train.astype(attr_type_dict)
+
+
+
+    arvore = Arvore(df_train, target_attribute, ID3, len(key_list)-1)
+    arvore.print()
+
+    #arvore.predict()
 
 if __name__ == "__main__" :
     main()

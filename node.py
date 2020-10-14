@@ -1,15 +1,15 @@
 class Node:
-    def __init__(self, attribute=None, is_leaf=False, category=None):
+    def __init__(self, attribute=None, is_leaf=False, target_value=None):
         self.attribute = attribute
         self.is_leaf = is_leaf
-        self.category = category
+        self.target_value = target_value
         self.gain = None
         self.child={}
 
         self.numeric_condition= None
 
-    def set_category(self, category):
-        self.category = category
+    def set_target_value(self, target_value):
+        self.target_value = target_value
 
     def set_leaf(self):
         self.is_leaf = True
@@ -25,7 +25,7 @@ class Node:
 
     def predict(self, inst):
         if self.is_leaf:
-            return self.category
+            return self.target_value
 
         # print("***atributo: ", self.attribute)
         # print("***instancia: ***\n", inst)
@@ -39,5 +39,5 @@ class Node:
         if key in self.child:
             return self.child[key].predict(inst)
         else:
-            return self.category
+            return self.target_value
 
