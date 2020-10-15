@@ -5,7 +5,7 @@ import random
 import numpy as np
 from arvore import Arvore, FlorestaAleatoria
 from multiprocessing import Pool
-
+import time
 # ---------------------------------------------------------------------
 dataset = {}
 dataset["votos"] = {\
@@ -94,7 +94,7 @@ def cross_validation(df, target, K):
         test[i] = fold_list[i].copy()
 
     #roda os treinos em paralelo
-    with Pool(processes=5) as pool:
+    with Pool(processes=8) as pool:
         #encapsula os argumentos
         arg_list = (zip(train, test, [target_coluna]*K, [n_arvores]*K))
         result_list = pool.map(treina_e_testa, arg_list)
@@ -147,14 +147,15 @@ def main():
 
     global n_arvores
 
-    valores_de_teste = [1,5,11,23]  #valores para n_arvores
+    valores_de_teste = [1,5,11,23,51,75,101,151,201]  #valores para n_arvores
     
-    print("n; Acuracia; desvio_padrao")
-
+    print("n; Acuracia; desvio_padrao; tempo_exe")
     for n in valores_de_teste:
+        ini = time.time()
         n_arvores = n
         n, acc, stdev = cross_validation(df_train, target_attribute, 10)
-        print("{}; {}; {}".format(n, acc, stdev))
+        fim = time.time()
+        print("{}; {}; {}; {}".format(n, acc, stdev, fim-ini))
     return
 
 
