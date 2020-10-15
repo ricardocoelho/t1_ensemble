@@ -12,7 +12,7 @@ def print_tree(node, i, edge):
     else:
         node_name = node.attribute
         if node.numeric_condition:
-            node_name += " <= " + "{:.2f}".format(node.numeric_condition)
+            node_name += "(<= " + "{:.2f})".format(node.numeric_condition)
         print("[{}]{}{} '{}'(gain: {:.3f} bits)".format(i, " "*i*4, edge, node_name , node.gain, ))
         for key, val in node.child.items():
             print_tree(val, i+1, str(key)+" ->")
@@ -191,6 +191,14 @@ def main():
 
     arvore = Arvore(df_train, target_attribute, ID3, len(key_list)-1)
     arvore.print()
+
+#    print("teste de uma instancia:")
+#    for j, test_row in df_train.iterrows():
+#        print(test_row)
+#        print("predicao: ", arvore.predict(test_row))
+#        break
+    
+
 
     #arvore.predict()
 
